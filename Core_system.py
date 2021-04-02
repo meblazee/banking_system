@@ -9,10 +9,27 @@ def account_create():
     pin = ''.join(choice(chars) for _ in range(4))
     second_part_of_card_number = ''.join(choice(chars) for _ in range(9))
     card_number = '400000' + second_part_of_card_number
+    list_card = [int(i) for i in card_number]
+    list_counter = 0
+    add_all_numbers = 0
+    # Luhn algorithm - Multiply odd digits by 2
+    for i in list_card:
+        if list_counter % 2 == 0:
+            list_card[list_counter] = i * 2
+            if list_card[list_counter] > 9:
+                list_card[list_counter] -= 9  # Luhn algorithm - Subtract 9 form numbers over 9
+        add_all_numbers += list_card[list_counter]  # Luhn algorithm - Add all 15 numbers
+        list_counter += 1
+
+    if add_all_numbers % 10 == 0:  # Luhn algorithm - Add check_sum number
+        card_number += '0'
+    else:
+        card_number += str(10 - add_all_numbers % 10)
+
     card_numbers_and_pins[card_number] = pin
     print('''Your card has been created \nYour card number: \n'''
           + card_number + '\n'
-          '''Your card PIN: \n'''
+                          '''Your card PIN: \n'''
           + pin)
 
 
