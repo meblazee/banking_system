@@ -1,7 +1,9 @@
 import string
-from random import choice
+import sqlite3
 
-card_numbers_and_pins = dict()
+from random import choice
+conn = sqlite3.connect('card.s3db')
+cur = conn.cursor()
 
 
 def account_create():
@@ -26,7 +28,9 @@ def account_create():
     else:
         card_number += str(10 - add_all_numbers % 10)
 
-    card_numbers_and_pins[card_number] = pin
+    cur.execute('INSERT INTO card (number, pin) '
+                'VALUES (?, ?);', (card_number, pin))
+    conn.commit()
     print('''Your card has been created \nYour card number: \n'''
           + card_number + '\n'
                           '''Your card PIN: \n'''
@@ -38,18 +42,23 @@ def log_in():
     input_card_number = input()
     print('Enter your PIN: ')
     input_pin = input()
-    if input_card_number in card_numbers_and_pins.keys() and card_numbers_and_pins[input_card_number] == input_pin:
-        print('You have successfully logged in!')
-        account_manage()
-    else:
+    cur.execute('SELECT number, pin FROM card WHERE number = ? AND pin = ?;', (input_card_number, input_pin))
+    number_pin_form_db = cur.fetchone()
+    try:
+        if input_card_number and input_pin in number_pin_form_db:
+            print('You have successfully logged in!')
+            account_manage(input_card_number)
+        else:
+            print('Wrong card number or pin')
+    except TypeError:
         print('Wrong card number or pin')
 
 
-def account_manage():
+def account_manage(input_card_number):
     while True:
         user_choice = input('''1. Balance \n2. Log out \n0. Exit\n''')
         if user_choice == '1':
-            account_balance()
+            account_balance(input_card_number)
         elif user_choice == '2':
             print('You have successfully logged out!')
             main_menu()
@@ -60,15 +69,27 @@ def account_manage():
             continue
 
 
-def account_balance():
-    balance = 0
-    print('Balance:', balance)
-    account_manage()
+def account_balance(input_card_number):
+    cur.execute('SELECT balance FROM card WHERE number = ?;', (input_card_number,))
+    balance = cur.fetchone()
+    print('Balance:', balance[0])
+    account_manage(input_card_number)
 
 
 def quit_programme():
     print('Bye!')
     quit()
+
+
+def create_table():
+    cur.execute('CREATE TABLE IF NOT EXISTS card ('
+                'id INTEGER PRIMARY KEY AUTOINCREMENT, '
+                'number TEXT, '
+                'pin TEXT, '
+                'balance INTEGER DEFAULT 0);'
+                '')
+    conn.commit()
+    main_menu()
 
 
 def main_menu():
@@ -84,4 +105,4 @@ def main_menu():
             print('Please enter correct number')
 
 
-main_menu()
+create_table()
